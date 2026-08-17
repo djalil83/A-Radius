@@ -1,0 +1,26 @@
+/
+ /login
+ /dashboard
+ /profile
+ /services
+ /services/ftth
+ /services/pppoe
+ /services/hotspot
+ /services/static-ip
+ /invoices
+ /payments
+ /connection
+ /usage
+ /devices
+ /devices/router
+ /devices/ont
+ /devices/wifi
+ /devices/lan
+ /devices/connected
+ /devices/password
+ /devices/restart
+ /tickets
+ /troubleshooting
+ /ai
+ /notifications
+ /settings

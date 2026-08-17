@@ -1,0 +1,26 @@
+{
+  "mode": "developer-approved",
+  "default_action": "suggest_only",
+  "preview_before_execution": true,
+  "sandbox_before_apply": true,
+  "production_execution_requires_approval": true,
+  "critical_actions_require_explicit_approval": true,
+  "internet_research": true,
+  "automatic_knowledge_indexing": true,
+  "automatic_production_changes": false,
+  "plaintext_credentials_to_ai": false,
+  "audit_all_actions": true,
+  "risk_levels": [
+    "READ_ONLY",
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "CRITICAL"
+  ],
+  "execution_targets": [
+    "SANDBOX",
+    "DEVELOPMENT",
+    "STAGING",
+    "PRODUCTION"
+  ]
+}

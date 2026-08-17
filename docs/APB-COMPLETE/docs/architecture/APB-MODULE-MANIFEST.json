@@ -1,0 +1,56 @@
+{
+  "name": "APB",
+  "version": "1.0-architecture",
+  "domains": [
+    "CRM",
+    "Service",
+    "Billing",
+    "Payment Gateway",
+    "Payment",
+    "RADIUS",
+    "MikroTik",
+    "NMS",
+    "FTTH",
+    "OLT",
+    "PPPoE",
+    "Hotspot",
+    "Voucher",
+    "Static IP",
+    "Mitra",
+    "Helpdesk",
+    "Technician",
+    "Inventory",
+    "Finance",
+    "Local AI",
+    "Audit"
+  ],
+  "infrastructure": [
+    "PostgreSQL",
+    "Redis",
+    "Redis Worker",
+    "Secret Service",
+    "Audit Trail"
+  ],
+  "ai": {
+    "mode": "local-first",
+    "llm_adapters": [
+      "Ollama",
+      "llama.cpp"
+    ],
+    "features": [
+      "chat",
+      "troubleshooting",
+      "device diagnosis",
+      "NOC correlation",
+      "technician assistant",
+      "RAG",
+      "reports"
+    ],
+    "action_gate": [
+      "READ_ONLY",
+      "LOW_RISK",
+      "APPROVAL_REQUIRED",
+      "HIGH_RISK"
+    ]
+  }
+}

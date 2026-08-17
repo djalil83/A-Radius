@@ -1,0 +1,17 @@
+{
+  "client_app": true,
+  "acs_integration": true,
+  "router_management": true,
+  "ont_management": true,
+  "wifi_24ghz": true,
+  "wifi_5ghz": true,
+  "connected_device_count": true,
+  "lan_management": true,
+  "change_wifi_password": true,
+  "router_restart": true,
+  "customer_ai_troubleshooting": true,
+  "customer_authorization_required": true,
+  "frontend_direct_router_access": false,
+  "plaintext_credentials_to_frontend": false,
+  "audit_trail": true
+}

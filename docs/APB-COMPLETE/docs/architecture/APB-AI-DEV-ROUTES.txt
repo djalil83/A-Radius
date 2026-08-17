@@ -1,0 +1,11 @@
+/ai/development
+/ai/development/command
+/ai/development/analysis
+/ai/development/proposals
+/ai/development/preview
+/ai/development/tests
+/ai/development/approvals
+/ai/development/execution
+/ai/development/research
+/ai/development/knowledge
+/ai/development/audit

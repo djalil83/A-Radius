@@ -1,0 +1,3 @@
+# packages/database/schema
+
+Module scaffold — see /docs/BLUEPRINT.md.

@@ -1,0 +1,49 @@
+apps/
+├── client/
+│   ├── web/
+│   │   ├── app/
+│   │   │   ├── login/
+│   │   │   ├── dashboard/
+│   │   │   ├── profile/
+│   │   │   ├── services/
+│   │   │   ├── invoices/
+│   │   │   ├── payments/
+│   │   │   ├── connection/
+│   │   │   ├── usage/
+│   │   │   ├── devices/
+│   │   │   │   ├── router/
+│   │   │   │   ├── ont/
+│   │   │   │   ├── wifi/
+│   │   │   │   ├── lan/
+│   │   │   │   ├── connected/
+│   │   │   │   ├── password/
+│   │   │   │   └── restart/
+│   │   │   ├── tickets/
+│   │   │   ├── troubleshooting/
+│   │   │   ├── ai/
+│   │   │   ├── notifications/
+│   │   │   └── settings/
+│   │   └── components/
+│   └── mobile/
+│       ├── android/
+│       └── ios/
+│
+└── api/
+    ├── customer/
+    ├── devices/
+    └── acs/
+        ├── devices/
+        ├── provisioning/
+        ├── parameters/
+        ├── diagnostics/
+        ├── wifi/
+        ├── lan/
+        ├── firmware/
+        ├── reboot/
+        └── events/
+
+packages/
+├── acs-sdk/
+├── device-engine/
+├── customer-sdk/
+└── shared/
