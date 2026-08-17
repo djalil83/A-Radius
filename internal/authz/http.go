@@ -1,9 +1,9 @@
 package authz
 
 import (
-"context"
-"errors"
-"net/http"
+	"context"
+	"errors"
+	"net/http"
 )
 
 type contextKey string
@@ -11,81 +11,84 @@ type contextKey string
 const principalContextKey contextKey = "a-radius.authz.principal"
 
 func WithPrincipal(
-ctx context.Context,
-principal *Principal,
+	ctx context.Context,
+	principal *Principal,
 ) context.Context {
-return context.WithValue(
-ctx,
-principalContextKey,
-principal,
-)
+	return context.WithValue(
+		ctx,
+		principalContextKey,
+		principal,
+	)
 }
 
 func PrincipalFromContext(ctx context.Context) *Principal {
-principal, _ := ctx.Value(principalContextKey).(*Principal)
-return principal
+	principal, _ := ctx.Value(principalContextKey).(*Principal)
+	return principal
 }
 
 type AuditDecision func(
-ctx context.Context,
-principal *Principal,
-permission string,
-allowed bool,
-status int,
+	ctx context.Context,
+	principal *Principal,
+	permission string,
+	allowed bool,
+	status int,
+	r *http.Request,
 )
 
 func (e *Engine) RequirePermissionHTTP(
-permission string,
-audit AuditDecision,
-next http.Handler,
+	permission string,
+	audit AuditDecision,
+	next http.Handler,
 ) http.Handler {
-return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-principal := PrincipalFromContext(r.Context())
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		principal := PrincipalFromContext(r.Context())
 
-err := e.RequirePermission(
-r.Context(),
-principal,
-permission,
-)
+		err := e.RequirePermission(
+			r.Context(),
+			principal,
+			permission,
+		)
 
-if err != nil {
-status := http.StatusInternalServerError
+		if err != nil {
+			status := http.StatusInternalServerError
 
-switch {
-case errors.Is(err, ErrUnauthenticated):
-status = http.StatusUnauthorized
-case errors.Is(err, ErrForbidden):
-status = http.StatusForbidden
-}
+			switch {
+			case errors.Is(err, ErrUnauthenticated):
+				status = http.StatusUnauthorized
+			case errors.Is(err, ErrForbidden):
+				status = http.StatusForbidden
+			}
 
-if audit != nil {
-audit(
-r.Context(),
-principal,
-permission,
-false,
-status,
-)
-}
+			if audit != nil {
+				audit(
+					r.Context(),
+					principal,
+					permission,
+					false,
+					status,
+					r,
+				)
+			}
 
-http.Error(
-w,
-http.StatusText(status),
-status,
-)
-return
-}
+			http.Error(
+				w,
+				http.StatusText(status),
+				status,
+			)
+			return
+		}
 
-if audit != nil {
-audit(
-r.Context(),
-principal,
-permission,
-true,
-http.StatusOK,
-)
-}
+		if audit != nil {
+			audit(
+				r.Context(),
+				principal,
+				permission,
+				true,
+				http.StatusOK,
+				r,
+			)
+		}
 
-next.ServeHTTP(w, r)
-})
+		next.ServeHTTP(w, r)
+	})
 }
