@@ -1,0 +1,21 @@
+{
+  "knowledge_key": "a-radius.security",
+  "version": "1.0.0",
+  "status": "active",
+  "scope": [
+    "authentication",
+    "authorization",
+    "rbac",
+    "http-401-403",
+    "audit",
+    "secure-development"
+  ],
+  "rules": {
+    "authorization_default": "deny",
+    "unauthenticated_http": 401,
+    "authenticated_without_permission_http": 403,
+    "ai_must_not_bypass_rbac": true,
+    "authorization_must_be_server_side": true,
+    "authorization_decisions_must_be_audited": true
+  }
+}
