@@ -1,0 +1,65 @@
+package main
+
+import (
+"context"
+"log"
+"net/http"
+"os"
+"time"
+
+"github.com/jackc/pgx/v5"
+"github.com/joho/godotenv"
+)
+
+var db *pgx.Conn
+
+func main() {
+if err := godotenv.Load(); err != nil {
+log.Println("No .env file found, using system environment")
+}
+
+dbURL := os.Getenv("DATABASE_URL")
+if dbURL == "" {
+log.Fatal("DATABASE_URL is not set in .env")
+}
+
+ctx := context.Background()
+var err error
+db, err = pgx.Connect(ctx, dbURL)
+if err != nil {
+log.Fatalf("Failed to connect database: %v", err)
+}
+defer db.Close(ctx)
+
+log.Println("Database connected successfully!")
+
+http.HandleFunc("/ping", pingHandler)
+http.HandleFunc("/health", healthHandler)
+
+port := os.Getenv("PORT")
+if port == "" {
+port = "8080"
+}
+
+log.Printf("Server running on http://localhost:%s", port)
+log.Printf("Test: curl http://localhost:%s/ping", port)
+
+if err := http.ListenAndServe(":"+port, nil); err != nil {
+log.Fatal(err)
+}
+}
+
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+w.Write([]byte("pong"))
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+if err := db.Ping(ctx); err != nil {
+http.Error(w, "Database is not reachable", http.StatusInternalServerError)
+return
+}
+w.Write([]byte("OK - Database connected"))
+}
