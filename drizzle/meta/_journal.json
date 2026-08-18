@@ -15,6 +15,20 @@
       "when": 1787014233601,
       "tag": "0001_amazing_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787015701203,
+      "tag": "0002_young_valkyrie",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787016314693,
+      "tag": "0003_watery_sentinels",
+      "breakpoints": true
     }
   ]
 }
