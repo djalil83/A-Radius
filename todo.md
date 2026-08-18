@@ -18,3 +18,15 @@
 - [x] Melakukan audit aksesibilitas dasar untuk label, focus state, keyboard, dan aria-label kontrol ikon
 - [x] Audit aksesibilitas end-to-end: keyboard navigation, visible focus, label form, dan kontrol ikon
 - [x] Simpan dan verifikasi checkpoint final proyek untuk Publish
+- [ ] Menetapkan kontrak integrasi API MikroTik dan strategi sinkronisasi RADIUS
+- [ ] Menambahkan konfigurasi router, secret terenkripsi, dan status sinkronisasi di MySQL
+- [ ] Mengimplementasikan client MikroTik serta prosedur tRPC sinkronisasi aman
+- [ ] Menambahkan UI koneksi router, status, dan kontrol sinkronisasi
+- [ ] Menambahkan pengujian integrasi, keamanan, dan dokumentasi operasional
+- [x] Restrukturisasi menu Developer sesuai hirarki Branch, Administrator, License, Billing, Change, Backup, dan Audit Trail
+- [x] Menambahkan submenu Developer yang dapat dibuka/tutup dan tetap responsif
+- [x] Menguji navigasi Developer dan menyimpan checkpoint perubahan
+- [x] Simpan checkpoint baru setelah perubahan struktur menu Developer dan verifikasi versinya
+- [x] Verifikasi interaktif expand/collapse Developer pada desktop dan mobile
+- [ ] Simpan checkpoint baru setelah perubahan struktur menu Developer, lalu verifikasi versi terbaru mencakup sidebar Developer
+- [ ] Lakukan pengujian interaktif expand/collapse menu Developer melalui preview browser dan catat hasilnya
