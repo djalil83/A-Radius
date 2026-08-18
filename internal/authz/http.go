@@ -35,6 +35,12 @@ type AuditDecision func(
 	r *http.Request,
 )
 
+func (e *Engine) PermissionMiddleware(permission string, audit AuditDecision) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return e.RequirePermissionHTTP(permission, audit, next)
+	}
+}
+
 func (e *Engine) RequirePermissionHTTP(
 	permission string,
 	audit AuditDecision,

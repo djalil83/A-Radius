@@ -1,0 +1,327 @@
+openapi: 3.1.0
+info:
+  title: A-Radius Subscription Profile API
+  version: 0.1.0
+  description: |
+    API untuk mengelola profile subscription A-Radius secara tenant-scoped.
+    Semua endpoint profile memerlukan JWT Bearer yang valid dan permission RBAC
+    sesuai operasi yang diminta.
+servers:
+  - url: http://localhost:8080
+    description: Local Docker Compose
+  - url: https://api.example.com
+    description: Production placeholder
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+  - name: Subscription Profiles
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Healthcheck API
+      security: []
+      responses:
+        '200':
+          description: API process is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/v1/subscription-profiles:
+    get:
+      tags: [Subscription Profiles]
+      summary: List subscription profiles
+      description: Returns non-archived profiles belonging to the JWT tenant.
+      x-required-permission: subscription_profiles.read
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: q
+          in: query
+          description: Case-insensitive search term used by the repository.
+          schema: { type: string, maxLength: 150 }
+        - name: service_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/ServiceType'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProfileStatus'
+      responses:
+        '200':
+          description: Paginated profile list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResult'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      tags: [Subscription Profiles]
+      summary: Create a subscription profile
+      x-required-permission: subscription_profiles.create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRequest'
+            example:
+              name: FTTH 20 Mbps
+              service_type: FTTH
+              category: Home
+              media: Fiber
+              color: '#1677ff'
+              description: Paket fiber untuk pelanggan rumah
+              rate_limit: 20M/20M
+              upload_bps: 20000000
+              download_bps: 20000000
+              shared_users: 1
+              monthly_price: 250000
+              active_days: 30
+              commission_amount: 10000
+              commission_type: RUPIAH
+              billing_cycle: MONTHLY
+              auto_isolate: true
+      responses:
+        '201':
+          description: Profile created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Duplicate name in the tenant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/subscription-profiles/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ProfileID'
+    get:
+      tags: [Subscription Profiles]
+      summary: Get one subscription profile
+      x-required-permission: subscription_profiles.read
+      responses:
+        '200':
+          description: Profile detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    patch:
+      tags: [Subscription Profiles]
+      summary: Update a subscription profile
+      description: |
+        The request must include the current version. A successful update
+        increments version by exactly one. A stale version returns 409.
+      x-required-permission: subscription_profiles.update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRequest' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    delete:
+      tags: [Subscription Profiles]
+      summary: Archive a subscription profile
+      description: Soft-deletes the profile. The version query parameter is required for optimistic locking.
+      x-required-permission: subscription_profiles.archive
+      parameters:
+        - name: version
+          in: query
+          required: true
+          description: Current profile version.
+          schema: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '204': { description: Profile archived successfully }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/subscription-profiles/{id}/revisions:
+    get:
+      tags: [Subscription Profiles]
+      summary: List immutable profile revisions
+      x-required-permission: subscription_profiles.read_history
+      parameters:
+        - $ref: '#/components/parameters/ProfileID'
+        - name: limit
+          in: query
+          description: Maximum number of revisions; defaults to 50 and is capped at 100.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Revision history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, limit]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Revision' }
+                  limit: { type: integer, example: 50 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT must contain sub and tenant_id UUID claims and match configured issuer/audience.
+  parameters:
+    ProfileID:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Offset:
+      name: offset
+      in: query
+      schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
+  schemas:
+    ServiceType:
+      type: string
+      enum: [FTTH, PPPOE, HOTSPOT_VOUCHER, STATIC_IP]
+    ProfileStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, ARCHIVED]
+    CommissionType:
+      type: string
+      enum: [RUPIAH, PERCENT]
+    BillingCycle:
+      type: string
+      enum: [DAILY, WEEKLY, MONTHLY, CUSTOM]
+    CreateRequest:
+      type: object
+      required: [name, service_type, color, shared_users, monthly_price, active_days, commission_amount, commission_type, billing_cycle]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150, example: FTTH 20 Mbps }
+        service_type: { $ref: '#/components/schemas/ServiceType' }
+        category: { type: [string, 'null'], maxLength: 100 }
+        media: { type: [string, 'null'], maxLength: 100 }
+        color: { type: string, pattern: '^#[0-9A-Fa-f]{6}$', example: '#1677ff' }
+        description: { type: [string, 'null'], maxLength: 2000 }
+        mikrotik_group: { type: [string, 'null'], maxLength: 150 }
+        radius_group: { type: [string, 'null'], maxLength: 150 }
+        rate_limit: { type: [string, 'null'], maxLength: 150 }
+        upload_bps: { type: [integer, 'null'], format: int64, minimum: 0 }
+        download_bps: { type: [integer, 'null'], format: int64, minimum: 0 }
+        shared_users: { type: integer, minimum: 1, default: 1 }
+        vlan_id: { type: [integer, 'null'], minimum: 1, maximum: 4094 }
+        olt_profile: { type: [string, 'null'], maxLength: 150 }
+        ip_pool: { type: [string, 'null'], maxLength: 150 }
+        monthly_price: { type: integer, format: int64, minimum: 0, example: 250000 }
+        active_days: { type: integer, minimum: 0, default: 30 }
+        commission_amount: { type: integer, format: int64, minimum: 0 }
+        commission_type: { $ref: '#/components/schemas/CommissionType' }
+        billing_cycle: { $ref: '#/components/schemas/BillingCycle' }
+        auto_isolate: { type: [boolean, 'null'], default: true }
+        billing_note: { type: [string, 'null'], maxLength: 1000 }
+    UpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateRequest'
+        - type: object
+          required: [version]
+          properties:
+            version: { type: integer, format: int64, minimum: 1, example: 1 }
+    Profile:
+      allOf:
+        - $ref: '#/components/schemas/CreateRequest'
+        - type: object
+          required: [id, tenant_id, status, version, created_at, updated_at]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            status: { $ref: '#/components/schemas/ProfileStatus' }
+            version: { type: integer, format: int64, minimum: 1 }
+            created_by: { type: [string, 'null'], format: uuid }
+            updated_by: { type: [string, 'null'], format: uuid }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    ListResult:
+      type: object
+      required: [items, limit, offset]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Profile' }
+        limit: { type: integer, example: 50 }
+        offset: { type: integer, example: 0 }
+    Revision:
+      type: object
+      required: [id, profile_id, version, operation, snapshot, changed_at]
+      properties:
+        id: { type: integer, format: int64 }
+        profile_id: { type: string, format: uuid }
+        version: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [CREATE, UPDATE, DELETE, STATUS_CHANGE, EXPORT, APPROVAL_REQUESTED, APPROVAL_DECIDED, APPLIED] }
+        snapshot: { type: string, format: byte, description: JSON snapshot encoded by the Go driver }
+        changed_by: { type: [string, 'null'], format: uuid }
+        changed_at: { type: string, format: date-time }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string, example: request body is invalid }
+  responses:
+    Unauthenticated:
+      description: Missing or invalid JWT identity
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Forbidden:
+      description: Authenticated principal lacks the required RBAC permission
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    ValidationError:
+      description: Invalid JSON or domain validation failure
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    NotFound:
+      description: Profile does not exist in the JWT tenant
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    VersionConflict:
+      description: Optimistic locking conflict
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    InternalError:
+      description: Unexpected server or database failure
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }

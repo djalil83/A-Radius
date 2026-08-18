@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: a-radius
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: a-radius-secrets
+  namespace: a-radius
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: CHANGE_ME_DB_PASSWORD
+  DATABASE_URL: postgres://a_radius:CHANGE_ME_DB_PASSWORD@a-radius-postgres:5432/a_radius?sslmode=disable
+  JWT_SECRET: CHANGE_ME_TO_A_RANDOM_32_BYTE_OR_LONGER_SECRET
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a-radius-config
+  namespace: a-radius
+data:
+  PROFILE_API_ADDR: ":8080"
+  JWT_ISSUER: "a-radius"
+  JWT_AUDIENCE: "a-radius-api"
+  POSTGRES_DB: "a_radius"
+  POSTGRES_USER: "a_radius"
+  POSTGRES_HOST: "a-radius-postgres"
+  POSTGRES_PORT: "5432"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: a-radius-postgres-data
+  namespace: a-radius
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a-radius-postgres
+  namespace: a-radius
+  labels:
+    app.kubernetes.io/name: a-radius-postgres
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: a-radius-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a-radius-postgres
+  namespace: a-radius
+  labels:
+    app.kubernetes.io/name: a-radius-postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: a-radius-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: a-radius-postgres
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom: {configMapKeyRef: {name: a-radius-config, key: POSTGRES_DB}}
+            - name: POSTGRES_USER
+              valueFrom: {configMapKeyRef: {name: a-radius-config, key: POSTGRES_USER}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: POSTGRES_PASSWORD}}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 1, memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: a-radius-postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a-radius-api
+  namespace: a-radius
+  labels:
+    app.kubernetes.io/name: a-radius-api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: a-radius-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a-radius-api
+  namespace: a-radius
+  labels:
+    app.kubernetes.io/name: a-radius-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: a-radius-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: a-radius-api
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:17-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGPASSWORD
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: POSTGRES_PASSWORD}}
+          command: ["sh", "-c"]
+          args:
+            - >-
+              until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT"
+              -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+              echo waiting for PostgreSQL; sleep 3; done
+          envFrom:
+            - configMapRef: {name: a-radius-config}
+      containers:
+        - name: api
+          image: ghcr.io/djalil83/a-radius-profile-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: DATABASE_URL}}
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: JWT_SECRET}}
+          envFrom:
+            - configMapRef: {name: a-radius-config}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: a-radius-db-migrate
+  namespace: a-radius
+  labels:
+    app.kubernetes.io/name: a-radius-db-migrate
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: a-radius-db-migrate
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:17-alpine
+          envFrom:
+            - configMapRef: {name: a-radius-config}
+          env:
+            - name: PGPASSWORD
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: POSTGRES_PASSWORD}}
+          command: ["sh", "-c"]
+          args:
+            - >-
+              until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT"
+              -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 3; done
+      containers:
+        - name: migrate
+          image: postgres:17-alpine
+          envFrom:
+            - configMapRef: {name: a-radius-config}
+          env:
+            - name: PGPASSWORD
+              valueFrom: {secretKeyRef: {name: a-radius-secrets, key: POSTGRES_PASSWORD}}
+          command: ["sh", "-c"]
+          args:
+            - >-
+              psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER"
+              -d "$POSTGRES_DB" -v ON_ERROR_STOP=1
+              -f /migrations/0001_init.sql
+              -f /migrations/0002_subscription_profiles.up.sql
+              -f /migrations/03-rbac-smoke.sql
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+      volumes:
+        - name: migrations
+          configMap:
+            name: a-radius-migrations

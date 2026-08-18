@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: a-radius
+resources:
+  - a-radius.yaml
+  - backup-restore.yaml
+configMapGenerator:
+  - name: a-radius-migrations
+    files:
+      - 0001_init.sql=../database/postgresql/migrations/0001_init.sql
+      - 0002_subscription_profiles.up.sql=../database/migrations/0002_subscription_profiles.up.sql
+      - 03-rbac-smoke.sql=../docker/postgres/03-rbac-smoke.sql
+  - name: a-radius-postgres-backup-scripts
+    files:
+      - pg-backup.sh=../scripts/pg-backup.sh
+      - pg-restore.sh=../scripts/pg-restore.sh
+generatorOptions:
+  disableNameSuffixHash: true
