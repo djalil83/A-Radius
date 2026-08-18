@@ -91,7 +91,7 @@ jobs:
         env:
           PGPASSWORD: a_radius_ci_password
         run: |
-          test "$(psql -Atx --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+          test "$(psql -At --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
             -c "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('subscription_profiles', 'subscription_profile_revisions', 'audit_events', 'approval_requests');")" = "4"
           test "$(psql -At --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
             -c "SELECT count(*) FROM apb.permissions WHERE permission_key LIKE 'subscription_profiles.%';")" = "5"
