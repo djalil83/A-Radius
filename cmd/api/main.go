@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/djalil83/A-Radius/internal/auth"
@@ -202,11 +205,45 @@ func main() {
 		port,
 	)
 
-	if err := http.ListenAndServe(
-		":"+port,
-		nil,
-	); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           nil,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	serverErr := make(chan error, 1)
+
+	go func() {
+		log.Printf("API server listening on :%s", port)
+		serverErr <- server.ListenAndServe()
+	}()
+
+	shutdownSignal := make(chan os.Signal, 1)
+	signal.Notify(shutdownSignal, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(shutdownSignal)
+
+	select {
+	case err := <-serverErr:
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("API server failed: %v", err)
+		}
+
+	case sig := <-shutdownSignal:
+		log.Printf("Shutdown signal received: %v", sig)
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(
+			context.Background(),
+			10*time.Second,
+		)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("Graceful shutdown failed: %v", err)
+			_ = server.Close()
+		}
 	}
 }
 
