@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A-RADIUS — GenieACS Administrator</title>
+  <link rel="stylesheet" href="genieacs.css">
+</head>
+<body>
+  <header class="topbar"><strong>A-RADIUS</strong><span>Administrator</span><span class="top-actions">🔔　⚙　Account</span></header>
+  <main class="layout">
+    <aside class="sidebar">
+      <a>Dashboard</a><a>Pelanggan</a><a>Service</a><a>Router</a>
+      <a class="active">▸ GenieACS</a><a class="sub">ONU / CPE</a><a class="sub">DHCP43</a><a class="sub">Server ACS</a>
+      <a>Voucher</a><a>Mitra</a><a>Billing</a><a>Payment</a><a>NMS</a><a>Teknisi</a><a>Finance</a>
+    </aside>
+    <section class="content">
+      <div class="heading"><div><p class="eyebrow">ADMINISTRATOR / GENIEACS</p><h1>ACS Device Intelligence</h1></div><span class="safe-badge">PRODUCTION COMMANDS REQUIRE APPROVAL</span></div>
+      <div class="metrics"><article><small>TOTAL ONU</small><strong>1.250</strong></article><article><small>ONLINE</small><strong>1.102</strong></article><article><small>OFF &lt;24H</small><strong>98</strong></article><article><small>OFF &gt;24H</small><strong>50</strong></article></div>
+      <section class="command-card"><div class="section-title"><h2>COMMAND CENTER</h2><span>Preview only until approved</span></div><div class="commands"><button data-command="SUMMON">SUMMON</button><button data-command="REBOOT">REBOOT</button><button data-command="DELETE">DELETE</button><button data-command="RESET">RESET</button><button data-command="SYNC">SINKRON</button><button data-command="DHCP_OPTION_43">DHCP43</button><button data-command="SERVER">SERVER</button></div></section>
+      <section class="toolbar"><label>Server <select><option>ALL SERVER</option></select></label><label>Status <select><option>ALL ONU</option><option>ONLINE</option><option>OFFLINE &lt;24H</option><option>OFFLINE &gt;24H</option></select></label><label class="search">Search <input placeholder="ID | SN | Username"><button>⌕</button></label></section>
+      <section class="table-card"><table><thead><tr><th>Flag</th><th>Username</th><th>PPPoE</th><th>TR069</th><th>SN</th><th>PON</th><th>Vendor</th><th>Status</th></tr></thead><tbody><tr><td class="online">●</td><td>CUST001</td><td>10.10.1.10</td><td>10.10.1.10</td><td>HSGQ001</td><td>1/1</td><td>HSGQ</td><td>ONLINE</td></tr><tr><td class="offline">●</td><td>CUST002</td><td>10.10.1.11</td><td>10.10.1.11</td><td>ZTE002</td><td>1/2</td><td>ZTE</td><td>OFFLINE &gt;24H</td></tr></tbody></table></section>
+      <div id="feedback" class="feedback" role="status"></div>
+    </section>
+  </main>
+  <script src="genieacs.js"></script>
+</body>
+</html>

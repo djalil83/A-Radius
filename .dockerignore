@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+*.log
+.DS_Store
+coverage.out
+/tmp
+vendor
+node_modules
+security-audit-report.md
+web/*.json

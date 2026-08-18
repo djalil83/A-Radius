@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A-RADIUS — Langganan Production</title>
+  <link rel="stylesheet" href="langganan-production.css">
+</head>
+<body>
+  <main class="subscription-shell">
+    <header><div><strong>A-RADIUS</strong><span>LANGGANAN PRODUCTION</span></div><span class="env">PRODUCTION · CONTROLLED</span></header>
+    <nav aria-label="Langganan navigation" class="module-nav">
+      <a href="#dashboard">Dashboard</a><a href="#daftar">Daftar Langganan</a><a href="#tambah">Tambah Langganan</a><a href="#billing">Set Billing</a><a href="#simulator">Simulator</a><a href="#secret">Secret</a><a href="#laporan">Laporan</a><a href="#pelanggan">Pelanggan</a><a href="#kode-unik">Kode Unik</a>
+    </nav>
+    <section id="dashboard" class="grid metrics"><article><small>TOTAL</small><strong>—</strong></article><article><small>ONLINE</small><strong>—</strong></article><article><small>TERISOLIR</small><strong>—</strong></article><article><small>JATUH TEMPO</small><strong>—</strong></article></section>
+    <section class="card"><div class="heading"><h1>Integration Readiness</h1><span data-production-status>PRODUCTION UNCHANGED</span></div><div class="integration-grid" data-integrations></div></section>
+    <section class="card" id="daftar"><div class="heading"><h1>Daftar Langganan</h1><div><input aria-label="Cari langganan" placeholder="Cari langganan..."><button data-preview-action="CREATE">TAMBAH</button></div></div><p>Filter: ALL PROFILE · SEMUA TIPE · ALL ROUTER · ALL DATA · PILIH WILAYAH</p><div class="table-placeholder">INET · NO LAYANAN · PELANGGAN · KTG · TIPE · PROFILE · JNS TAGIHAN · SIKLUS</div></section>
+    <section class="card workflow"><div class="heading"><h1>Developer → Preview → Approval → Production</h1><span>AI PRODUCTION ACCESS: DENIED</span></div><div class="steps"><span>DEVELOPER</span><i>→</i><span>PREVIEW</span><i>→</i><span>APPROVAL</span><i>→</i><span>PRODUCTION</span></div><p data-feedback>Perubahan billing, router, RADIUS, isolir, invoice, dan ledger tidak diterapkan tanpa preview, integration check, dan approval.</p><button class="primary" data-preview-action="SET_ACTIVE">CREATE PREVIEW</button><button data-readiness-action>CHECK READINESS</button></section>
+    <section class="card domains"><h1>Connected Domains</h1><div class="domain-list"><span>Pelanggan</span><span>Service</span><span>Billing</span><span>RADIUS</span><span>MikroTik</span><span>Payment</span><span>Finance</span></div></section>
+  </main><script src="langganan-production.js" type="module"></script>
+</body>
+</html>

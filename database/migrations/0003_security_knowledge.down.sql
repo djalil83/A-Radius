@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS security.security_knowledge_audit;
+DROP TABLE IF EXISTS security.security_knowledge_approvals;
+DROP TABLE IF EXISTS security.security_application_mapping;
+DROP TABLE IF EXISTS security.security_rules;
+DROP TABLE IF EXISTS security.security_intelligence;
+DROP TABLE IF EXISTS security.security_knowledge_versions;
+DROP TYPE IF EXISTS security.approval_status;
+DROP TYPE IF EXISTS security.knowledge_status;
+DROP SCHEMA IF EXISTS security;
