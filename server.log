@@ -1,1 +1,2 @@
-git: 'pushnohup' is not a git command. See 'git --help'.
+nohup: ignoring input
+no Go files in /data/data/com.termux/files/home/A-Radius/cmd/api
