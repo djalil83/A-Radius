@@ -34,6 +34,7 @@ services:
     restart: "no"
 
   api:
+    image: ${API_IMAGE:-ghcr.io/djalil83/a-radius-profile-api:latest}
     build:
       context: .
       dockerfile: Dockerfile
