@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/djalil83/A-Radius/internal/authz"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -25,13 +26,23 @@ func Router(h *Handler) http.Handler {
 	return r
 }
 
-// IdentityHeaders is a temporary integration adapter. Replace it with the
-// existing A-Radius auth middleware before production deployment.
+// identityHeaders memakai Principal terverifikasi pada router produksi.
+// Fallback header dipertahankan hanya untuk Router legacy dan test lama; jangan
+// expose Router legacy tanpa authn.Middleware di lingkungan produksi.
 func identityHeaders(w http.ResponseWriter, r *http.Request) (tenantID, actorID string, ok bool) {
+	if principal := authz.PrincipalFromContext(r.Context()); principal != nil {
+		if strings.TrimSpace(principal.UserID) == "" || strings.TrimSpace(principal.TenantID) == "" {
+			writeError(w, http.StatusUnauthorized, "UNAUTHENTICATED", "verified principal is incomplete")
+			return "", "", false
+		}
+		return principal.TenantID, principal.UserID, true
+	}
+
+	// Compatibility adapter only. ProtectedRouter never relies on this path.
 	tenantID = strings.TrimSpace(r.Header.Get("X-Tenant-ID"))
 	actorID = strings.TrimSpace(r.Header.Get("X-Actor-ID"))
 	if tenantID == "" || actorID == "" {
-		writeError(w, http.StatusUnauthorized, "UNAUTHENTICATED", "X-Tenant-ID and X-Actor-ID are required")
+		writeError(w, http.StatusUnauthorized, "UNAUTHENTICATED", "verified principal is required")
 		return "", "", false
 	}
 	return tenantID, actorID, true

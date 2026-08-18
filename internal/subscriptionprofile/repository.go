@@ -125,14 +125,15 @@ func (r *Repository) Update(ctx context.Context, tenantID, id, actorID string, r
 
 func (r *Repository) classifyUpdateMiss(ctx context.Context, tenantID, id string, version int64) error {
 	var current int64
-	err := r.db.QueryRowContext(ctx, "SELECT version FROM subscription_profiles WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL", tenantID, id).Scan(&current)
+	var deletedAt sql.NullTime
+	err := r.db.QueryRowContext(ctx, "SELECT version, deleted_at FROM subscription_profiles WHERE tenant_id=$1 AND id=$2", tenantID, id).Scan(&current, &deletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}
 	if err != nil {
 		return err
 	}
-	if current != version {
+	if deletedAt.Valid || current != version {
 		return ErrConflict
 	}
 	return ErrConflict
@@ -151,7 +152,8 @@ func (r *Repository) Archive(ctx context.Context, tenantID, id, actorID string, 
 		return nil
 	}
 	var current int64
-	err = r.db.QueryRowContext(ctx, "SELECT version FROM subscription_profiles WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL", tenantID, id).Scan(&current)
+	var deletedAt sql.NullTime
+	err = r.db.QueryRowContext(ctx, "SELECT version, deleted_at FROM subscription_profiles WHERE tenant_id=$1 AND id=$2", tenantID, id).Scan(&current, &deletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}

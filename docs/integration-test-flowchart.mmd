@@ -1,0 +1,46 @@
+flowchart TD
+    A([Mulai: go test -tags=integration]) --> B{INTEGRATION_DATABASE_URL tersedia?}
+    B -- Tidak --> C[Skip dengan pesan prasyarat]
+    B -- Ya --> D[Parse DSN dan buka database]
+    D --> E{PostgreSQL tersedia?}
+    E -- Tidak --> F[Fail: database tidak dapat diakses]
+    E -- Ya --> G[Ping dengan timeout]
+    G --> H[Reset schema test / gunakan database disposable]
+    H --> I[Terapkan migration 0002_subscription_profiles.up.sql]
+    I --> J{Migration berhasil?}
+    J -- Tidak --> K[Fail: hentikan test dan tampilkan error]
+    J -- Ya --> L[Buat repository, handler, dan httptest router]
+    L --> M[Pasang X-Tenant-ID dan X-Actor-ID]
+    M --> N[POST: create profile]
+    N --> O{HTTP 201 dan profile valid?}
+    O -- Tidak --> P[Fail assertion]
+    O -- Ya --> Q[GET: list dan detail]
+    Q --> R{Data dan version=1 benar?}
+    R -- Tidak --> P
+    R -- Ya --> S[PATCH dengan version=1]
+    S --> T{HTTP 200 dan version=2?}
+    T -- Tidak --> P
+    T -- Ya --> U[GET revisions]
+    U --> V{Revision CREATE + UPDATE tersedia?}
+    V -- Tidak --> P
+    V -- Ya --> W[PATCH ulang memakai version lama]
+    W --> X{HTTP 409 VERSION_CONFLICT?}
+    X -- Tidak --> P
+    X -- Ya --> Y[DELETE/archive memakai version=2]
+    Y --> Z{HTTP 204 dan status ARCHIVED?}
+    Z -- Tidak --> P
+    Z -- Ya --> AA[Verifikasi audit trail dan revision]
+    AA --> AB{Audit dan histori konsisten?}
+    AB -- Tidak --> P[Fail assertion]
+    AB -- Ya --> AC[Mulai concurrent update test]
+    AC --> AD[32-250 worker membaca version snapshot]
+    AD --> AE[Barrier: kirim PATCH hampir bersamaan]
+    AE --> AF{Tepat 1 sukses dan sisanya 409?}
+    AF -- Tidak --> P
+    AF -- Ya --> AG[Verifikasi final version, revision, audit, dan no lost update]
+    AG --> AH{Invariant konsisten?}
+    AH -- Tidak --> P
+    AH -- Ya --> AI[Cleanup data/schema test]
+    AI --> AJ([Lulus])
+    P --> AK[Cleanup melalui defer]
+    AK --> AL([Gagal])

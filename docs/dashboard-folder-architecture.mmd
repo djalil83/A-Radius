@@ -1,0 +1,22 @@
+flowchart TD
+    AUTH[Session atau token terverifikasi] --> RBAC[Middleware autentikasi dan RBAC]
+    RBAC --> DEV[Developer Dashboard]
+    RBAC --> ADM[Administrator Dashboard]
+    RBAC --> TEK[Teknisi Dashboard]
+    RBAC --> RES[Reseller Dashboard]
+    RBAC --> PEL[Pelanggan Dashboard]
+
+    ADM -->|approval, user, profile, audit| DEV
+    ADM -->|penugasan tiket| TEK
+    ADM -->|approval reseller dan paket| RES
+    ADM -->|layanan dan status akun| PEL
+    RES -->|aktivasi dan data layanan| PEL
+    TEK -->|status pekerjaan dan tiket| PEL
+
+    DEV --> API[API Go dan domain services]
+    ADM --> API
+    TEK --> API
+    RES --> API
+    PEL --> API
+    API --> DB[(PostgreSQL)]
+    API --> AUDIT[Audit trail dan revision history]

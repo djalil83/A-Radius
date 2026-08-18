@@ -32,3 +32,26 @@ Update menggunakan `WHERE id = $id AND tenant_id = $tenant_id AND version = $ver
 ## Keamanan
 
 Handler membatasi body JSON sampai 1 MiB dan menolak field JSON yang tidak dikenal. Repository memakai parameterized query. Endpoint tidak menerima atau mengembalikan credential RADIUS, MikroTik, OLT/ACS, atau payment gateway. Authz object-level dan rate limiting harus ditambahkan pada middleware production.
+
+## OpenAPI / Swagger
+
+Spesifikasi API tersedia pada [`docs/openapi.yaml`](../../docs/openapi.yaml). File tersebut mendokumentasikan seluruh endpoint CRUD, endpoint revision history, header identity sementara, schema request/response, dan error code standar.
+
+Untuk menampilkan spesifikasi pada Swagger UI secara lokal, jalankan Swagger UI dengan file `docs/openapi.yaml` sebagai definisi API atau gunakan editor OpenAPI yang kompatibel dengan OpenAPI 3.0.3.
+
+### Penanganan `409 VERSION_CONFLICT`
+
+Client harus menyimpan nilai `version` dari response terakhir. Nilai tersebut dikirim kembali pada request `PATCH` di body dan pada request `DELETE` sebagai query parameter. Jika server mengembalikan `409`, client tidak boleh mengulang payload lama secara buta. Client harus mengambil ulang profile, memperbarui state/form, lalu meminta pengguna meninjau dan mengirim ulang perubahan terhadap version terbaru.
+
+Contoh response:
+
+```json
+{
+  "error": {
+    "code": "VERSION_CONFLICT",
+    "message": "profile was changed by another request; reload before updating"
+  }
+}
+```
+
+Response `409` tidak berarti request dapat dianggap berhasil. Hanya response `200` untuk update atau `204` untuk archive yang menandakan mutasi selesai.
