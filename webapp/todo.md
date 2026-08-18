@@ -1,0 +1,80 @@
+# Project TODO
+
+- [x] Dashboard utama A-Radius dengan sidebar navigasi lengkap sesuai daftar menu pengguna
+- [x] Halaman Profile Berlangganan dengan tabel paket FTTH, PPPoE, Hotspot/Voucher, dan Static IP
+- [x] Form profile dengan tab General, Network, dan Billing
+- [x] Skema MySQL profile berlangganan dan revision history
+- [x] Prosedur tRPC untuk list, detail, create, update, delete, filter, export, dan revision history
+- [x] Manus OAuth dan RBAC role admin/user untuk membatasi operasi CRUD
+- [x] Statistik profile aktif, jenis layanan, rate contoh, dan engine
+- [x] Filter dan pencarian berdasarkan layanan serta status aktif/nonaktif
+- [x] Export daftar profile ke CSV
+- [x] UI premium, responsif, aksesibel, dan konsisten menggunakan nama A-Radius
+- [x] Unit test backend dan validasi TypeScript
+- [x] Verifikasi visual desktop dan mobile
+- [x] Checkpoint akhir siap untuk Publish melalui Management UI
+- [x] Memperkuat focal area, wordmark, dan signature accent agar identitas premium A-Radius lebih tegas
+- [x] Melakukan verifikasi visual viewport mobile nyata untuk halaman Profile Berlangganan
+- [x] Melakukan audit aksesibilitas dasar untuk label, focus state, keyboard, dan aria-label kontrol ikon
+- [x] Audit aksesibilitas end-to-end: keyboard navigation, visible focus, label form, dan kontrol ikon
+- [x] Simpan dan verifikasi checkpoint final proyek untuk Publish
+- [ ] Menetapkan kontrak integrasi API MikroTik dan strategi sinkronisasi RADIUS
+- [ ] Menambahkan konfigurasi router, secret terenkripsi, dan status sinkronisasi di MySQL
+- [ ] Mengimplementasikan client MikroTik serta prosedur tRPC sinkronisasi aman
+- [ ] Menambahkan UI koneksi router, status, dan kontrol sinkronisasi
+- [ ] Menambahkan pengujian integrasi, keamanan, dan dokumentasi operasional
+- [x] Restrukturisasi menu Developer sesuai hirarki Branch, Administrator, License, Billing, Change, Backup, dan Audit Trail
+- [x] Menambahkan submenu Developer yang dapat dibuka/tutup dan tetap responsif
+- [x] Menguji navigasi Developer dan menyimpan checkpoint perubahan
+- [x] Simpan checkpoint baru setelah perubahan struktur menu Developer dan verifikasi versinya
+- [x] Verifikasi interaktif expand/collapse Developer pada desktop dan mobile
+- [x] Simpan checkpoint baru setelah perubahan struktur menu Developer, lalu verifikasi versi terbaru mencakup sidebar Developer
+- [x] Lakukan pengujian interaktif expand/collapse menu Developer melalui preview browser dan catat hasilnya
+- [x] Memperbarui dashboard Administrator License dengan detail identitas, paket, status, periode, harga, mata uang, auto renewal, dan jatuh tempo
+- [x] Menambahkan panel LIMIT: pelanggan, user, router, OLT, ODP, voucher, teknisi, mitra, dan storage
+- [x] Menambahkan panel FEATURE: CRM, Billing, Payment Gateway, RADIUS, MikroTik, FTTH, OLT, NMS, Finance, Teknisi, AI Assistant, dan API
+- [x] Menguji responsif dashboard Administrator License dan menyimpan checkpoint terbaru
+- [x] Simpan checkpoint baru setelah perubahan Administrator License dan verifikasi versi terbaru mencakup panel lisensi, LIMIT, dan FEATURE
+- [x] Verifikasi tambahan overflow Administrator License pada desktop dan mobile
+- [ ] Verifikasi interaktif expand/collapse submenu Developer pada preview browser desktop dan mobile, lalu catat hasilnya
+- [x] Menjadikan data Administrator License sebagai record personal per Administrator/Branch
+- [x] Menampilkan kartu license dengan identitas, paket, status, periode, harga, dan auto renewal sesuai data personal
+- [x] Menampilkan pemakaian limit versus kuota untuk pelanggan, user, router, OLT, dan storage
+- [x] Menambahkan aksi Edit License, Extend, dan Suspend
+- [ ] Menguji UI lisensi personal pada desktop/mobile dan menyimpan checkpoint terbaru
+- [x] Menambahkan skema MySQL dan migration untuk administrator license per Administrator/Branch serta audit event
+- [x] Menambahkan helper DB dan prosedur tRPC untuk membaca license berdasarkan administrator login
+- [x] Menghubungkan kartu license dan usage ke data backend nyata
+- [x] Mengimplementasikan Edit, Extend, Suspend melalui tRPC dengan RBAC dan audit trail
+- [x] Menyelesaikan test backend, UI responsive, dan checkpoint lisensi personal
+- [ ] Menyelaraskan tampilan kartu LICENSE ADMINISTRATOR dengan format ringkas referensi Developer
+- [ ] Menampilkan identitas, periode, harga, limit utama, dan tombol Edit License/Extend/Suspend dalam hierarki yang lebih tegas
+- [ ] Memverifikasi tampilan kartu Developer pada desktop/mobile dan menyimpan checkpoint terbaru
+- [ ] Ulangi verifikasi visual desktop dan mobile untuk kartu license personal setelah sesi preview stabil dan pastikan state final, bukan skeleton, terlihat
+- [ ] Simpan checkpoint baru setelah integrasi backend license personal selesai, lalu verifikasi version ID terbaru mencakup perubahan schema/tRPC/UI license
+- [x] Menambahkan halaman Administrator Settings > License dengan tampilan license yang aman untuk role Administrator
+- [x] Menghitung status license ACTIVE, WARNING, EXPIRING SOON, EXPIRED, dan SUSPENDED dari tanggal serta kebijakan grace period
+- [x] Menampilkan notifikasi license akan berakhir dan tombol lihat license/ajukan perpanjangan
+- [x] Menerapkan kebijakan read-only saat license EXPIRED tanpa menghapus data
+- [x] Menambahkan konfigurasi threshold status yang dapat dikelola Developer
+- [ ] Menyelaraskan struktur domain license plan, limits, features, events, dan notifications dengan schema saat ini
+- [ ] Memvalidasi perubahan dan mengirim commit terbaru ke GitHub
+- [x] Memindahkan threshold warning, expiring, expired, dan grace period ke konfigurasi Developer/backend, bukan hardcoded frontend
+- [x] Menambahkan unit test transisi status license berdasarkan threshold dan grace period yang dapat dikonfigurasi
+- [x] Memperbaiki error TypeScript `useAuth` pada kontrol policy Developer dan menjalankan ulang validasi
+- [x] Menambahkan test deterministik untuk status ACTIVE, WARNING, EXPIRING SOON, EXPIRED, dan grace period
+- [x] Memperluas konfigurasi Vitest agar unit test client status license ikut dijalankan
+- [x] Menambahkan enforcement server-side pada prosedur profile create/update/remove untuk license EXPIRED atau SUSPENDED
+- [x] Menambahkan unit test yang memastikan mutasi profile ditolak ketika license tidak dapat menulis
+- [x] Melakukan verifikasi end-to-end bahwa UI dan backend sama-sama read-only untuk license expired
+- [x] Menambahkan test router/tRPC profiles.create, update, dan remove yang memverifikasi FORBIDDEN saat license EXPIRED atau SUSPENDED
+- [x] Menambahkan verifikasi terarah UI read-only dan pesan error backend pada skenario license expired
+- [x] Menambahkan coverage tRPC create/update/remove untuk write block SUSPENDED
+- [x] Menambahkan test terarah untuk memastikan kontrol UI Create/Edit/Delete nonaktif saat license expired
+- [x] Menambahkan component-level test untuk tombol Profile Baru, Edit, Hapus, dan Simpan pada state license expired
+- [x] Memperluas include Vitest untuk test component `.test.tsx` dan menjalankan ulang suite
+- [x] Memperbaiki test component CRUD yang gagal karena `React is not defined`, lalu menjalankan ulang suite
+- [x] Mengintegrasikan ProfileCrudActions ke kontrol CRUD nyata di Home dan menyesuaikan test state expired
+- [x] Mengintegrasikan ProfileCrudActions ke kontrol Edit dan Hapus nyata pada tabel Home
+- [x] Menambahkan contract test Home yang memverifikasi semua kontrol CRUD memakai guard read-only
+- [x] Menambahkan contract test khusus Home.tsx yang memverifikasi wiring ProfileCrudActions dan guard read-only untuk Create, Save, Edit, dan Hapus
