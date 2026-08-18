@@ -1,21 +1,48 @@
 # A-Radius Web UI
 
-`profile-berlangganan.html` adalah adaptasi UI **APB Profile Berlangganan** untuk proyek A-Radius.
+`profile-berlangganan.html` adalah UI Profile Berlangganan A-Radius yang terhubung ke API Go melalui `profile-api.js` dan Fetch API.
 
-## Penyesuaian
+## Integrasi API
 
-UI menggunakan branding A-Radius, namespace `localStorage` `a_radius_profile_v1`, dan nama berkas ekspor `a-radius-profile.json`. Fitur lokal yang tersedia mencakup tab General/Network/Billing, filter profile, pencarian, tambah/edit/hapus profile, konfirmasi perubahan, serta ekspor JSON.
+| Operasi UI | Endpoint |
+|---|---|
+| Muat daftar | `GET /api/v1/subscription-profiles` |
+| Tambah | `POST /api/v1/subscription-profiles` |
+| Edit | `PATCH /api/v1/subscription-profiles/{id}` dengan `version` |
+| Arsipkan | `DELETE /api/v1/subscription-profiles/{id}?version=N` |
+| History | `GET /api/v1/subscription-profiles/{id}/revisions` |
 
-## Batasan saat ini
+Mapping API dilakukan di `profile-api.js`. Field UUID dipertahankan sebagai string, `service_type` dipetakan ke label UI, serta nilai bit-per-second dikonversi ke label kecepatan.
 
-UI ini masih berjalan sebagai halaman statis dan belum terhubung ke API atau PostgreSQL. Data form disimpan pada browser melalui `localStorage`. Integrasi produksi perlu menambahkan endpoint profile berlangganan, validasi server-side, autentikasi/otorisasi, approval queue, dan audit trail sebelum operasi RADIUS, MikroTik, OLT/ACS, atau billing dijalankan.
+## Konfigurasi
+
+Sebelum `profile-api.js` dimuat, konfigurasi harus tersedia melalui JavaScript atau konfigurasi server yang aman:
+
+```html
+<script>
+  window.ARADIUS_API_BASE = 'http://localhost:8080';
+  window.ARADIUS_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  window.ARADIUS_ACTOR_ID = '00000000-0000-0000-0000-000000000002';
+</script>
+<script src="profile-api.js"></script>
+```
+
+Pada `profile-berlangganan.html`, `profile-api.js` sudah dimuat oleh halaman. Dalam production, jangan menanam UUID actor statis. Ganti adapter header `X-Tenant-ID` dan `X-Actor-ID` dengan middleware autentikasi/session atau token yang telah diverifikasi.
+
+## Version conflict
+
+Setiap profile yang dimuat menyimpan `version`. Saat menyimpan atau mengarsipkan, versi tersebut dikirim kembali ke API. Jika API menjawab `409 VERSION_CONFLICT`, UI memuat ulang daftar profile dan meminta pengguna meninjau perubahan terbaru.
 
 ## Menjalankan secara lokal
 
-Dari root proyek, jalankan server file statis apa pun, kemudian buka `web/profile-berlangganan.html`. Contoh sederhana:
+Dari root proyek, jalankan API dan server file statis secara terpisah:
 
 ```bash
-python3 -m http.server 8080 --directory web
+export DATABASE_URL='postgres://user:password@localhost:5432/a_radius?sslmode=require'
+export PROFILE_API_ADDR=':8080'
+go run ./cmd/profile-api
+
+python3 -m http.server 8081 --directory web
 ```
 
-Jangan menaruh credential database, RADIUS, MikroTik, OLT, atau payment gateway di HTML maupun JavaScript frontend.
+Buka `http://localhost:8081/profile-berlangganan.html`. Pastikan API menyediakan CORS jika UI dan API berada pada origin berbeda. Jangan menaruh credential database, RADIUS, MikroTik, OLT, atau payment gateway di HTML maupun JavaScript frontend.
