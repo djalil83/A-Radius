@@ -1,0 +1,151 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.25.13'
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/a-radius-profile-api
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go tests and PostgreSQL migration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: a_radius_ci
+          POSTGRES_USER: a_radius_ci
+          POSTGRES_PASSWORD: a_radius_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U a_radius_ci -d a_radius_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Run vet
+        run: go vet ./...
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          test -z "$(gofmt -l .)" || {
+            echo 'The following Go files are not formatted:'
+            gofmt -l .
+            exit 1
+          }
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Scan Go dependencies
+        run: govulncheck ./...
+
+      - name: Apply PostgreSQL migrations
+        env:
+          PGPASSWORD: a_radius_ci_password
+        run: |
+          psql --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+            --set ON_ERROR_STOP=1 --file database/postgresql/migrations/0001_init.sql
+          psql --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+            --set ON_ERROR_STOP=1 --file database/migrations/0002_subscription_profiles.up.sql
+          psql --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+            --set ON_ERROR_STOP=1 --file docker/postgres/03-rbac-smoke.sql
+
+      - name: Verify migration objects
+        env:
+          PGPASSWORD: a_radius_ci_password
+        run: |
+          test "$(psql -Atx --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+            -c "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('subscription_profiles', 'subscription_profile_revisions', 'audit_events', 'approval_requests');")" = "4"
+          test "$(psql -At --host 127.0.0.1 --port 5432 --username a_radius_ci --dbname a_radius_ci \
+            -c "SELECT count(*) FROM apb.permissions WHERE permission_key LIKE 'subscription_profiles.%';")" = "5"
+
+  docker:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and optionally push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image summary
+        if: always()
+        run: |
+          {
+            echo '### Docker image'
+            echo
+            echo '${{ steps.meta.outputs.tags }}'
+          } >> "$GITHUB_STEP_SUMMARY"

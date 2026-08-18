@@ -16,6 +16,7 @@ var (
 type Principal struct {
 	UserID   string
 	Username string
+	TenantID string
 }
 
 type Querier interface {
