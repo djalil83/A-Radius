@@ -5,7 +5,6 @@
 -- Schema files remain useful as documentation/reference,
 -- but a fresh database must be bootstrappable from migrations.
 
-BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -140,5 +139,3 @@ CREATE INDEX IF NOT EXISTS idx_security_knowledge_key
 INSERT INTO apb.schema_migrations(version)
 VALUES ('0001_init')
 ON CONFLICT (version) DO NOTHING;
-
-COMMIT;

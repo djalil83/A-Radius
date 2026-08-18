@@ -4,7 +4,6 @@
 -- Adds customer, service, and customer identity tables
 -- required by the Customer Portal.
 
-BEGIN;
 
 CREATE TABLE IF NOT EXISTS apb.customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,5 +115,3 @@ CREATE INDEX IF NOT EXISTS idx_customer_identities_customer
 INSERT INTO apb.schema_migrations(version)
 VALUES ('0003_customer_core')
 ON CONFLICT (version) DO NOTHING;
-
-COMMIT;

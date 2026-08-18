@@ -4,7 +4,6 @@
 -- Raw session tokens are never stored.
 -- Only SHA-256 hashes of session tokens are persisted.
 
-BEGIN;
 
 CREATE TABLE IF NOT EXISTS apb.auth_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -42,5 +41,3 @@ CREATE INDEX IF NOT EXISTS idx_auth_sessions_active
 INSERT INTO apb.schema_migrations(version)
 VALUES ('0004_auth_sessions')
 ON CONFLICT (version) DO NOTHING;
-
-COMMIT;

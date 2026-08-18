@@ -1,7 +1,6 @@
 -- A-Radius / APB
 -- Customer portal RBAC permission
 
-BEGIN;
 
 INSERT INTO apb.permissions (
     permission_key,
@@ -41,5 +40,3 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 INSERT INTO apb.schema_migrations(version)
 VALUES ('0002_customer_portal')
 ON CONFLICT (version) DO NOTHING;
-
-COMMIT;
