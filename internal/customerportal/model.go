@@ -22,3 +22,13 @@ type CustomerProfile struct {
 	PostalCode string `json:"postal_code,omitempty"`
 	Status     string `json:"status"`
 }
+
+type CustomerService struct {
+	ID            string `json:"id"`
+	ServiceCode   string `json:"service_code"`
+	ServiceType   string `json:"service_type"`
+	PackageName   string `json:"package_name"`
+	DownloadSpeed int64  `json:"download_speed"`
+	UploadSpeed   int64  `json:"upload_speed"`
+	Status        string `json:"status"`
+}
