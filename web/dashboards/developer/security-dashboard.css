@@ -111,3 +111,35 @@
 .compare-feedback { min-height: 1.1rem; margin: 0; padding: .7rem 1.2rem; color: #86efac; font-size: .72rem; }
 @media (max-width: 760px) { .compare-columns { grid-template-columns: 1fr; } .affected-modules > div { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 500px) { .affected-modules > div { grid-template-columns: 1fr; } }
+
+/* Developer Dashboard modular architecture */
+.developer-card {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--surface, #ffffff);
+}
+
+.developer-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.developer-security-score__value {
+  font-size: 2rem;
+}
+
+.developer-finding {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.developer-finding:last-child {
+  border-bottom: 0;
+}
