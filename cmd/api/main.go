@@ -218,6 +218,17 @@ func main() {
 		protectedDeveloperRoutes,
 	)
 
+	// Browser UI/API clients use /api/developer while the legacy
+	// dashboard namespace remains available under /dashboard/developer/.
+	// StripPrefix restores the handler's expected /security/... paths.
+	http.Handle(
+		"/api/developer/",
+		http.StripPrefix(
+			"/api/developer",
+			developerAuthenticated,
+		),
+	)
+
 	http.Handle(
 		"/dashboard/developer/",
 		developerAuthenticated,
