@@ -14,6 +14,7 @@ import (
 	"github.com/djalil83/A-Radius/internal/auth"
 	"github.com/djalil83/A-Radius/internal/authz"
 	"github.com/djalil83/A-Radius/internal/customerportal"
+	"github.com/djalil83/A-Radius/internal/dashboard/pelanggan"
 	"github.com/djalil83/A-Radius/internal/db/migrations"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -169,6 +170,48 @@ func main() {
 	)
 
 	// ------------------------------------------------------------
+	// CUSTOMER DASHBOARD
+	// ------------------------------------------------------------
+
+	pelangganHandler := pelanggan.NewHandler(customerHandler)
+
+	pelangganRoutes := pelanggan.ProtectedRouter(
+		pelangganHandler,
+		authzEngine,
+		func(
+			ctx context.Context,
+			principal *authz.Principal,
+			permission string,
+			allowed bool,
+			status int,
+			r *http.Request,
+		) {
+			if err := auditLogger.AuthorizationDecision(
+				ctx,
+				principal,
+				permission,
+				allowed,
+				status,
+				r,
+			); err != nil {
+				log.Printf(
+					"customer dashboard authorization audit failed: %v",
+					err,
+				)
+			}
+		},
+	)
+
+	// Authentication wajib terjadi sebelum RBAC.
+	pelangganAuthenticated := authHandler.RequireSession(
+		pelangganRoutes,
+	)
+
+	http.Handle(
+		"/dashboard/pelanggan/",
+		pelangganAuthenticated,
+	)
+
 	// SYSTEM
 	// ------------------------------------------------------------
 
