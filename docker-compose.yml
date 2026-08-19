@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-a_radius}
+      POSTGRES_USER: ${POSTGRES_USER:-a_radius}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-a_radius_dev_only}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  migrate:
+    image: postgres:17-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-a_radius}
+      PGUSER: ${POSTGRES_USER:-a_radius}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-a_radius_dev_only}
+    volumes:
+      - ./database/migrations/0002_subscription_profiles.up.sql:/migrations/0002_subscription_profiles.up.sql:ro
+    command: ["sh", "-ec", "if [ \"$(psql -tAc \"SELECT to_regclass('public.subscription_profiles')\")\" = \"subscription_profiles\" ]; then echo 'subscription_profiles already migrated'; else psql -v ON_ERROR_STOP=1 -f /migrations/0002_subscription_profiles.up.sql; fi"]
+    restart: "no"
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/djalil83/a-radius-profile-api:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-a_radius}:${POSTGRES_PASSWORD:-a_radius_dev_only}@postgres:5432/${POSTGRES_DB:-a_radius}?sslmode=disable
+      PROFILE_API_ADDR: :8080
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+    name: a_radius_postgres_data
