@@ -131,12 +131,7 @@ func main() {
 		customerHandler,
 	)
 
-	// First authenticate the session and create the Principal.
-	customerAuthenticated := authHandler.RequireSession(
-		customerRoutes,
-	)
-
-	// Then enforce the RBAC permission.
+	// RBAC runs behind the authenticated session.
 	protectedCustomerRoutes := authzEngine.RequirePermissionHTTP(
 		"customer.portal.read",
 		func(
@@ -161,12 +156,17 @@ func main() {
 				)
 			}
 		},
-		customerAuthenticated,
+		customerRoutes,
+	)
+
+	// Authentication wajib terjadi sebelum RBAC.
+	customerAuthenticated := authHandler.RequireSession(
+		protectedCustomerRoutes,
 	)
 
 	http.Handle(
 		"/api/v1/customer/",
-		protectedCustomerRoutes,
+		customerAuthenticated,
 	)
 
 	// ------------------------------------------------------------
