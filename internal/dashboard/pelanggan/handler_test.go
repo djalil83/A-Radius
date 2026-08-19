@@ -3,6 +3,7 @@ package pelanggan
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/djalil83/A-Radius/internal/customerportal"
@@ -30,37 +31,41 @@ func TestRoutesWithoutPortalReturn503(t *testing.T) {
 	}
 }
 
-func TestRoutesWithPortalRequireAuthentication(t *testing.T) {
+func TestRoutesServeDashboardUI(t *testing.T) {
 	portal := customerportal.NewHandler(nil)
 	handler := NewHandler(portal)
 	router := handler.Routes()
 
-	tests := []string{
+	req := httptest.NewRequest(
+		http.MethodGet,
 		"/",
-		"/dashboard",
-		"/me",
-		"/services",
+		nil,
+	)
+
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf(
+			"expected HTTP 200 for dashboard UI, got %d",
+			rec.Code,
+		)
 	}
 
-	for _, path := range tests {
-		t.Run(path, func(t *testing.T) {
-			req := httptest.NewRequest(
-				http.MethodGet,
-				path,
-				nil,
-			)
+	if contentType := rec.Header().Get("Content-Type"); !strings.HasPrefix(
+		contentType,
+		"text/html",
+	) {
+		t.Fatalf(
+			"expected HTML content type, got %q",
+			contentType,
+		)
+	}
 
-			rec := httptest.NewRecorder()
-
-			router.ServeHTTP(rec, req)
-
-			if rec.Code != http.StatusUnauthorized {
-				t.Fatalf(
-					"expected HTTP 401 for %s, got %d",
-					path,
-					rec.Code,
-				)
-			}
-		})
+	if !strings.Contains(rec.Body.String(), "A-Radius") {
+		t.Fatalf(
+			"expected dashboard HTML to contain A-Radius",
+		)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/djalil83/A-Radius/internal/customerportal"
 	"github.com/djalil83/A-Radius/internal/dashboard/pelanggan"
 	"github.com/djalil83/A-Radius/internal/db/migrations"
+	"github.com/djalil83/A-Radius/web"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
@@ -172,7 +174,14 @@ func main() {
 	// ------------------------------------------------------------
 	// CUSTOMER DASHBOARD
 	// ------------------------------------------------------------
-
+	// Authentication -> RBAC -> role-specific customer dashboard.
+	//
+	// Permission:
+	//     customer.portal.read
+	//
+	// The dashboard handler owns the embedded UI and the customer
+	// dashboard endpoints. This keeps the customer dashboard behind
+	// the same authentication/RBAC/audit boundary.
 	pelangganHandler := pelanggan.NewHandler(customerHandler)
 
 	pelangganRoutes := pelanggan.ProtectedRouter(
@@ -207,9 +216,63 @@ func main() {
 		pelangganRoutes,
 	)
 
+	// Customer dashboard frontend asset.
+	// dashboard.js hanya berisi kode frontend dan tidak mengekspos
+	// data customer. API tetap dilindungi authentication + RBAC.
+	http.Handle(
+		"/dashboard/pelanggan/dashboard.js",
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(
+					w,
+					"method not allowed",
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
+
+			data, err := fs.ReadFile(
+				web.Assets,
+				"dashboards/pelanggan/dashboard.js",
+			)
+			if err != nil {
+				http.Error(
+					w,
+					"customer dashboard asset unavailable",
+					http.StatusServiceUnavailable,
+				)
+				return
+			}
+
+			w.Header().Set(
+				"Content-Type",
+				"application/javascript; charset=utf-8",
+			)
+			w.Header().Set("Cache-Control", "no-store")
+
+			_, _ = w.Write(data)
+		}),
+	)
+
 	http.Handle(
 		"/dashboard/pelanggan/",
 		pelangganAuthenticated,
+	)
+
+	// Shared dashboard shell is non-sensitive frontend code.
+	// It is served from the embedded web assets because dashboard.js
+	// imports /shared/dashboard-shell.js.
+	sharedAssets, err := fs.Sub(web.Assets, "shared")
+	if err != nil {
+		log.Fatalf("failed to initialize shared dashboard assets: %v", err)
+	}
+
+	http.Handle(
+		"/shared/",
+		http.StripPrefix(
+			"/shared/",
+			http.FileServer(http.FS(sharedAssets)),
+		),
 	)
 
 	// SYSTEM
