@@ -2,12 +2,31 @@ package developer
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 )
 
 // Handler menyediakan endpoint khusus Developer Security Dashboard.
-type Handler struct{}
+type Handler struct {
+	ScanRepository ScanRepository
+	ScanWorker     *ScanWorker
+}
+
+// NewHandler creates a Developer Security Dashboard handler
+// with an isolated in-memory scan repository and safe scanner.
+func NewHandler() *Handler {
+	repository := NewMemoryScanRepository()
+	worker := &ScanWorker{
+		Repository: repository,
+		Scanner:    SafeScanner{},
+	}
+
+	return &Handler{
+		ScanRepository: repository,
+		ScanWorker:     worker,
+	}
+}
 
 // Routes mendaftarkan endpoint yang selanjutnya wajib dibungkus middleware JWT
 // dan permission RBAC pada router aplikasi.
@@ -17,6 +36,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("/security/overview", h.securityOverview)
 	mux.HandleFunc("/security/features", h.features)
 	mux.HandleFunc("/security/scans", h.scans)
+	mux.HandleFunc("/security/scans/", h.scans)
 	mux.HandleFunc("/security/continuous/policy", h.continuousPolicy)
 	mux.HandleFunc("/security/continuous/sources", h.continuousSources)
 	mux.HandleFunc("/security/continuous/featured-finding", h.featuredContinuousFinding)
@@ -54,31 +74,124 @@ func (h *Handler) features(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *Handler) scans(w http.ResponseWriter, r *http.Request) {
+	// GET /security/scans/{id}
+	if r.Method == http.MethodGet {
+		prefix := "/security/scans/"
+		if len(r.URL.Path) <= len(prefix) || r.URL.Path[:len(prefix)] != prefix {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"error": map[string]string{
+					"code":    "SCAN_NOT_FOUND",
+					"message": "scan not found",
+				},
+			})
+			return
+		}
+
+		id := r.URL.Path[len(prefix):]
+		if id == "" {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"error": map[string]string{
+					"code":    "SCAN_NOT_FOUND",
+					"message": "scan not found",
+				},
+			})
+			return
+		}
+
+		job, err := h.ScanRepository.Get(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, ErrScanNotFound) {
+				writeJSON(w, http.StatusNotFound, map[string]any{
+					"error": map[string]string{
+						"code":    "SCAN_NOT_FOUND",
+						"message": "scan not found",
+					},
+				})
+				return
+			}
+
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to load scan",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, job)
+		return
+	}
+
+	// POST /security/scans
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": map[string]string{"code": "METHOD_NOT_ALLOWED", "message": "only POST is supported"}})
+		w.Header().Set("Allow", "GET, POST")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"error": map[string]string{
+				"code":    "METHOD_NOT_ALLOWED",
+				"message": "only GET or POST is supported",
+			},
+		})
 		return
 	}
 
 	var request struct {
 		Type string `json:"type"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&request); err != nil || request.Type == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "INVALID_SCAN_REQUEST", "message": "scan type is required"}})
-		return
-	}
-	if request.Type != "full" {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": map[string]string{"code": "UNSUPPORTED_SCAN_TYPE", "message": "supported scan type is full"}})
+
+	if err := json.NewDecoder(
+		http.MaxBytesReader(w, r.Body, 16<<10),
+	).Decode(&request); err != nil || request.Type == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": map[string]string{
+				"code":    "INVALID_SCAN_REQUEST",
+				"message": "scan type is required",
+			},
+		})
 		return
 	}
 
-	// Eksekusi scanner nyata akan dibuat sebagai job asynchronous setelah queue,
-	// worker, evidence storage, dan approval policy tersedia.
-	writeJSON(w, http.StatusAccepted, map[string]any{
-		"scan_id": "pending",
-		"type":    request.Type,
-		"status":  "queued",
-	})
+	if request.Type != "full" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": map[string]string{
+				"code":    "UNSUPPORTED_SCAN_TYPE",
+				"message": "supported scan type is full",
+			},
+		})
+		return
+	}
+
+	job, err := NewScanJob(request.Type)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if err := h.ScanRepository.Create(r.Context(), job); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to create scan",
+		})
+		return
+	}
+
+	// Saat ini worker dijalankan synchronous menggunakan SafeScanner.
+	// Nantinya dapat dipindahkan ke queue/background worker tanpa
+	// mengubah kontrak HTTP.
+	if err := h.ScanWorker.Run(r.Context(), job.ID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "scan failed",
+		})
+		return
+	}
+
+	result, err := h.ScanRepository.Get(r.Context(), job.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to load completed scan",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, result)
 }
 
 func (h *Handler) continuousPolicy(w http.ResponseWriter, _ *http.Request) {
