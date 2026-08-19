@@ -15,6 +15,7 @@ import (
 	"github.com/djalil83/A-Radius/internal/auth"
 	"github.com/djalil83/A-Radius/internal/authz"
 	"github.com/djalil83/A-Radius/internal/customerportal"
+	"github.com/djalil83/A-Radius/internal/dashboard/developer"
 	"github.com/djalil83/A-Radius/internal/dashboard/pelanggan"
 	"github.com/djalil83/A-Radius/internal/db/migrations"
 	"github.com/djalil83/A-Radius/web"
@@ -169,6 +170,57 @@ func main() {
 	http.Handle(
 		"/api/v1/customer/",
 		customerAuthenticated,
+	)
+
+	// ------------------------------------------------------------
+	// DEVELOPER SECURITY DASHBOARD
+	// ------------------------------------------------------------
+	// Authentication -> RBAC -> Developer Security Dashboard.
+	//
+	// Primary permission:
+	//     security:scan
+	//
+	// The Developer dashboard is protected by the authenticated
+	// session and server-side RBAC.
+
+	developerHandler := developer.NewHandler()
+	developerRoutes := developerHandler.Routes()
+
+	protectedDeveloperRoutes := authzEngine.RequirePermissionHTTP(
+		"security:scan",
+		func(
+			ctx context.Context,
+			principal *authz.Principal,
+			permission string,
+			allowed bool,
+			status int,
+			r *http.Request,
+		) {
+			if err := auditLogger.AuthorizationDecision(
+				ctx,
+				principal,
+				permission,
+				allowed,
+				status,
+				r,
+			); err != nil {
+				log.Printf(
+					"developer dashboard authorization audit failed: %v",
+					err,
+				)
+			}
+		},
+		developerRoutes,
+	)
+
+	// Authentication wajib terjadi sebelum RBAC.
+	developerAuthenticated := authHandler.RequireSession(
+		protectedDeveloperRoutes,
+	)
+
+	http.Handle(
+		"/dashboard/developer/",
+		developerAuthenticated,
 	)
 
 	// ------------------------------------------------------------
