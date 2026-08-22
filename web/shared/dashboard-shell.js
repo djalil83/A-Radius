@@ -47,47 +47,7 @@ export async function apiFetch(path, options = {}) {
 
 export function renderDashboardShell({ role, title, content }) {
   document.title = `A-Radius | ${title}`;
-
   const root = document.querySelector('[data-dashboard-root]');
-  if (!root) {
-    throw new Error('Elemen [data-dashboard-root] tidak ditemukan');
-  }
-
-  root.replaceChildren();
-
-  const shell = document.createElement('main');
-  shell.className = 'dashboard-shell';
-  shell.dataset.role = role;
-
-  const header = document.createElement('header');
-
-  const brand = document.createElement('strong');
-  brand.textContent = 'A-Radius';
-
-  const heading = document.createElement('span');
-  heading.textContent = title;
-
-  header.append(brand, heading);
-
-  const section = document.createElement('section');
-
-  if (typeof content === 'string') {
-    section.innerHTML = content;
-  } else if (content instanceof Node) {
-    section.appendChild(content);
-  } else if (content instanceof DocumentFragment) {
-    section.appendChild(content);
-  } else if (content != null) {
-    throw new TypeError('Dashboard content harus berupa string, Node, atau DocumentFragment');
-  }
-
-  shell.append(header, section);
-  root.appendChild(shell);
-
-  return {
-    root,
-    shell,
-    header,
-    section,
-  };
+  if (!root) throw new Error('Elemen [data-dashboard-root] tidak ditemukan');
+  root.innerHTML = `<main class="dashboard-shell" data-role="${role}"><header><strong>A-Radius</strong><span>${title}</span></header><section>${content}</section></main>`;
 }

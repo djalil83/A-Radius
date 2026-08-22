@@ -1,22 +1,25 @@
-export function renderSecurityScore(container, score) {
-  if (!container) return;
+(function () {
+  'use strict';
 
-  const value = Number.isFinite(Number(score))
-    ? Math.max(0, Math.min(100, Number(score)))
-    : 0;
+  window.DeveloperSecurityScore = {
+    render(container, score) {
+      if (!container) return;
 
-  container.innerHTML = `
-    <section
-      class="developer-card developer-security-score"
-      aria-label="Security score"
-    >
-      <div class="developer-card__header">
-        <span>Security Score</span>
-      </div>
+      const value = Number.isFinite(Number(score))
+        ? Number(score)
+        : 0;
 
-      <strong class="developer-security-score__value">
-        ${value}
-      </strong>
-    </section>
-  `;
-}
+      container.innerHTML = `
+        <section class="developer-card developer-security-score"
+                 aria-label="Security score">
+          <div class="developer-card__header">
+            <span>Security Score</span>
+          </div>
+          <strong class="developer-security-score__value">
+            ${value}
+          </strong>
+        </section>
+      `;
+    }
+  };
+})();

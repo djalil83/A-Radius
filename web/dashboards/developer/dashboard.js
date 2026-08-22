@@ -1,11 +1,4 @@
 import { requireRole, renderDashboardShell, apiFetch } from '../../shared/dashboard-shell.js';
-import {
-  renderDeveloperSidebar,
-  renderDeveloperHeader,
-  renderMetricCard,
-  renderFindings,
-  renderSecurityScore,
-} from './components/index.js';
 
 requireRole('developer');
 
