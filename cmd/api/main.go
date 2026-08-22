@@ -280,43 +280,41 @@ func main() {
 	)
 
 	// Customer dashboard frontend asset.
-	// Keep the dashboard JavaScript behind the same session
-	// authentication used by the customer dashboard.
-	customerDashboardAsset := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(
-				w,
-				"method not allowed",
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
-
-		data, err := fs.ReadFile(
-			web.Assets,
-			"dashboards/pelanggan/dashboard.js",
-		)
-		if err != nil {
-			http.Error(
-				w,
-				"customer dashboard asset unavailable",
-				http.StatusServiceUnavailable,
-			)
-			return
-		}
-
-		w.Header().Set(
-			"Content-Type",
-			"application/javascript; charset=utf-8",
-		)
-		w.Header().Set("Cache-Control", "no-store")
-
-		_, _ = w.Write(data)
-	})
-
+	// dashboard.js hanya berisi kode frontend dan tidak mengekspos
+	// data customer. API tetap dilindungi authentication + RBAC.
 	http.Handle(
 		"/dashboard/pelanggan/dashboard.js",
-		authHandler.RequireSession(customerDashboardAsset),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(
+					w,
+					"method not allowed",
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
+
+			data, err := fs.ReadFile(
+				web.Assets,
+				"dashboards/pelanggan/dashboard.js",
+			)
+			if err != nil {
+				http.Error(
+					w,
+					"customer dashboard asset unavailable",
+					http.StatusServiceUnavailable,
+				)
+				return
+			}
+
+			w.Header().Set(
+				"Content-Type",
+				"application/javascript; charset=utf-8",
+			)
+			w.Header().Set("Cache-Control", "no-store")
+
+			_, _ = w.Write(data)
+		}),
 	)
 
 	http.Handle(
